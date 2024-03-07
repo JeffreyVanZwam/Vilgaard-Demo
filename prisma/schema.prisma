@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AccountRight {
+  id                     Int           @id @default(autoincrement())
+  name                   String        @unique
+  thirdPersonDescriptive String
+  accountTypes           AccountType[]
+  menuItem               MenuItem?     @relation(fields: [menuItemId], references: [id])
+  menuItemId             Int?
+  submenuItem            SubmenuItem?  @relation(fields: [submenuItemId], references: [id])
+  submenuItemId          Int?
+}
+
+model AccountType {
+  id              Int            @id @default(autoincrement())
+  name            String
+  backgroundColor String
+  textColor       String
+  display         String
+  users           User[]
+  accountRights   AccountRight[]
+}
+
+model ActionType {
+  id                Int         @id @default(autoincrement())
+  name              String      @unique
+  i18n              Json
+  logsForThisAction ActionLog[]
+}
+
+model ActionLog {
+  id              Int        @id @default(autoincrement())
+  actionOfUser    User       @relation(fields: [userId], references: [id])
+  userId          String
+  performedAction ActionType @relation(fields: [actionId], references: [id])
+  actionId        Int
+  ts              DateTime   @default(now())
+}
+
+model Assemblee {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  position        Int?
+  assembleeSpecs  AssembleeSpecs[]
+  location        Location?        @relation(fields: [locationId], references: [id])
+  locationId      Int?
+  hasCustomAmount Boolean          @default(false)
+}
+
+model AssembleeSpecs {
+  id                  Int        @id @default(autoincrement())
+  forBooking          Booking    @relation(fields: [bookingId], references: [id])
+  bookingId           Int
+  assemblee           Assemblee? @relation(fields: [assembleeId], references: [id])
+  assembleeId         Int?
+  count               Int
+  assembleeNameBackup String?
+}
+
+model Booking {
+  id           Int              @id @default(autoincrement())
+  name         String
+  description  String?          @db.Text
+  tsFrom       String?
+  dateFd       String
+  dateFm       String
+  dateFy       String
+  dateFh       String
+  dateFi       String
+  tsTo         String?
+  dateTd       String
+  dateTm       String
+  dateTy       String
+  dateTh       String
+  dateTi       String
+  pax          String?
+  roomsetup    String?
+  bookingGroup String?
+  fullDay      Boolean?
+  rooms        Room[]
+  assemblee    AssembleeSpecs[]
+  persons      User[]
+  isExportable Boolean?
+  rssLocation  String?
+}
+
+model DBSettings {
+  id              Int @id @default(autoincrement())
+  lastRewrittenID Int
+}
+
+model Feed {
+  id              Int        @id @default(autoincrement())
+  name            String     @unique
+  locationsToShow Location[]
+}
+
+model Location {
+  id            Int         @id @default(autoincrement())
+  name          String      @unique
+  rooms         Room[]
+  assemblees    Assemblee[]
+  accessibleBy  User[]
+  visibleInFeed Feed[]
+}
+
+model MenuItem {
+  id        Int            @id @default(autoincrement())
+  position  Int?
+  i18n      Json?
+  svg       String
+  subMenu   SubmenuItem[]
+  pageItems AccountRight[]
+}
+
+model Room {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  position   Int?
+  booking    Booking[]
+  location   Location? @relation(fields: [locationId], references: [id])
+  locationId Int?
+}
+
+model SubmenuItem {
+  id         Int            @id @default(autoincrement())
+  position   Int?
+  i18n       Json?
+  svg        String
+  pageItems  AccountRight[]
+  menuItem   MenuItem?      @relation(fields: [menuItemId], references: [id])
+  menuItemId Int?
+}
+
+model User {
+  id                String      @id
+  email             String      @unique
+  avatar            String?
+  blocked           Boolean     @default(false)
+  firstname         String?
+  lastname          String?
+  lastLogin         DateTime    @default(now())
+  memberSince       DateTime    @default(now())
+  accountType       AccountType @relation(fields: [accountTypeId], references: [id])
+  accountTypeId     Int
+  theme             Json?
+  actionLog         ActionLog[]
+  canSeeLocations   Location[]
+  startpage         String?
+  calendarBaseview  Json?
+  plannedOnBookings Booking[]
+  idleDuration      Int         @default(900000)
+
+  @@index([accountTypeId], map: "User_accountTypeId_fkey")
+}
